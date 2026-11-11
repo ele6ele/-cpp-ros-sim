@@ -1,0 +1,33 @@
+# ---- 构建产物（不进仓库）----
+build/
+*.exe
+*.obj
+*.pdb
+*.ilk
+*.idb
+*.exp
+*.lib
+
+# ---- Visual Studio / MSBuild ----
+.vs/
+*.vcxproj*
+*.sln
+Debug/
+Release/
+
+# ---- VS Code：只保留团队共享的配置文件 ----
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/c_cpp_properties.json
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# ---- 运行时产物 ----
+logs/
+*.log
+
+# ---- 系统文件 ----
+Thumbs.db
+Desktop.ini
+.DS_Store

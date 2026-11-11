@@ -1,0 +1,26 @@
+{
+    // 源码、日志统一 UTF-8，避免中文乱码
+    "files.encoding": "utf8",
+    "files.autoGuessEncoding": false,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.renderWhitespace": "boundary",
+    "editor.formatOnSave": false,
+
+    // C/C++ 智能提示默认配置（详细路径在 c_cpp_properties.json 里）
+    "C_Cpp.default.cppStandard": "c++17",
+    "C_Cpp.default.intelliSenseMode": "windows-msvc-x64",
+    "C_Cpp.default.configurationProvider": "ms-vscode.cpptools",
+    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.errorSquiggles": "enabled",
+
+    "files.associations": {
+        "*.h": "cpp",
+        "*.hpp": "cpp"
+    },
+
+    // 终端默认用 PowerShell（run.bat 里已经 chcp 65001，中文日志不乱码）
+    "terminal.integrated.defaultProfile.windows": "PowerShell"
+}

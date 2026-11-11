@@ -1,0 +1,4 @@
+# 统一换行：仓库内统一 LF，.bat 保留 CRLF（cmd 对 LF-only 批处理不友好）
+* text=auto
+
+*.bat text eol=crlf
