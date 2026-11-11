@@ -84,7 +84,7 @@ git commit -m "feat(node): 实现 Node 基类与名称校验"
 
 ## 7. 进度
 
-- [ ] M1 Node 基类
+- [x] M1 Node 基类（已实现，见 `include/Node.h`）
 - [ ] M2 Message 消息封装
 - [ ] M3 RosCore 单例与注册表
 - [ ] M4 Publisher / Subscriber 与消息转发
