@@ -20,6 +20,7 @@
 
 #include "Exception.h"
 #include "Node.h"
+#include "Message.h"
 
 namespace {
 
@@ -77,5 +78,14 @@ int main() {
     checkIllegalName("   ");
 
     std::cout << "\nM1 完成。下一步 M2：Message 消息封装与时间戳。\n";
+
+    Message m("25.3C");
+    std::cout << m.getContent() << " | " << m.getTimestamp() << "\n";
+    std::cout << "长度=" << m.getTimestamp().size() << "\n";
+
+
+
+
+
     return 0;
 }
