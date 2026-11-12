@@ -1,11 +1,8 @@
 {
-    "version": "4",
+    "version": 4,
     "configurations": [
         {
             "name": "Win32-MSVC",
-            // 本机工具链（换电脑/升级 VS 后只需改这两处版本号）
-            // MSVC 头文件：<VS 安装目录>\VC\Tools\MSVC\<版本>\include
-            // Windows SDK：C:\Program Files (x86)\Windows Kits\10\Include\<版本>
             "compilerPath": "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe",
             "intelliSenseMode": "windows-msvc-x64",
             "cStandard": "c17",
