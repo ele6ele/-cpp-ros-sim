@@ -9,12 +9,30 @@
     "editor.renderWhitespace": "boundary",
     "editor.formatOnSave": false,
 
-    // C/C++ 智能提示默认配置（详细路径在 c_cpp_properties.json 里）
+    // ================= 关闭自动补全 =================
+    // 只关"弹窗式建议"，错误波浪线 / F12 跳转 / 悬停说明都保留
+    // 需要临时补全时按 Ctrl+Space 手动呼出，仍然可用
+    "editor.quickSuggestions": {
+        "other": "off",
+        "comments": "off",
+        "strings": "off"
+    },
+    "editor.suggestOnTriggerCharacters": false,   // 打 . 和 -> 时不弹
+    "editor.wordBasedSuggestions": "off",         // 不用文档里出现过的单词去猜
+    "editor.acceptSuggestionOnEnter": "off",      // 回车永远只是换行，不会误收一条建议
+    "editor.tabCompletion": "off",                // Tab 不触发补全
+    "editor.suggest.showSnippets": false,         // 不弹代码片段模板（for/while 骨架之类）
+    "editor.inlineSuggest.enabled": false,        // 关闭行内 AI 补全（若装了 Copilot 之类）
+    "editor.parameterHints.enabled": false,       // 打括号时的"参数提示"浮窗
+    "C_Cpp.autocomplete": "disabled",             // C/C++ 扩展自带的补全引擎也关掉
+    "cpp-devtools.enableCppCodeEditingTools": false, // 微软新版 C/C++ DevTools 的代码编辑工具
+
+    // ================= C/C++ 配置 =================
     "C_Cpp.default.cppStandard": "c++17",
     "C_Cpp.default.intelliSenseMode": "windows-msvc-x64",
     "C_Cpp.default.configurationProvider": "ms-vscode.cpptools",
-    "C_Cpp.intelliSenseEngine": "default",
-    "C_Cpp.errorSquiggles": "enabled",
+    "C_Cpp.intelliSenseEngine": "default",        // 保留：靠它显示语法错误红线
+    "C_Cpp.errorSquiggles": "enabled",            // 保留：写错时仍有红色波浪线
 
     "files.associations": {
         "*.h": "cpp",
