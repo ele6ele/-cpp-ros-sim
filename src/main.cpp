@@ -20,6 +20,7 @@
 
 #include "Exception.h"
 #include "Node.h"
+#include "Publisher.h"
 #include "Message.h"
 
 namespace {
@@ -86,6 +87,21 @@ int main() {
 
 
 
+
+    // ---- 步骤 1 临时自测：Publisher（步骤 4 接线完成后删掉）----
+    std::cout << "\n--- Publisher 自测 ---\n";
+    try {
+        Publisher pub("pub_temp", "/sensor/temp");
+        pub.init();
+        pub.publish("25.3C");
+        pub.publish("26.1C");
+        pub.shutdown();
+
+        std::cout << "\n--- 非法话题测试（FR-25）---\n";
+        Publisher badTopic("pub_bad", "   ");
+    } catch (const NodeException& e) {
+        std::cout << "[OK] 非法话题被拦截：" << e.what() << "\n";
+    }
 
     return 0;
 }
