@@ -41,12 +41,12 @@ public:
 
     void init() override {
         inited_ = true;
-        std::cout << "[INFO] 节点「" << name() << "」初始化完成\n";
+        std::cout << "[INFO] 节点「" << getName() << "」初始化完成\n";
     }
 
     void shutdown() override {
         inited_ = false;
-        std::cout << "[INFO] 节点「" << name() << "」已关闭\n";
+        std::cout << "[INFO] 节点「" <<getName() << "」已关闭\n";
     }
 };
 
