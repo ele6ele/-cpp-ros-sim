@@ -22,6 +22,7 @@
 #include "Node.h"
 #include "Publisher.h"
 #include "Message.h"
+#include "Subscriber.h"
 
 namespace {
 
@@ -103,6 +104,27 @@ int main() {
         std::cout << "[OK] 非法话题被拦截（TopicException）：" << e.what() << "\n";
     } catch (const RosException& e) {
         std::cout << "[OK] 其他项目异常（RosException）：" << e.what() << "\n";
+    }
+
+    // ---- 步骤 2 临时自测：Subscriber（步骤 4 接线完成后删掉）----
+    std::cout << "\n--- Subscriber 自测 ---\n";
+    try {
+        Subscriber sub1("显示屏订阅者", "/sensor/temp");
+        Subscriber sub2("日志记录者", "/sensor/temp");
+        sub1.init();
+        sub2.init();
+
+        Message msg("25.3C");
+        sub1.onMessage(msg);
+        sub2.onMessage(msg);
+
+        sub1.shutdown();
+        sub2.shutdown();
+
+        std::cout << "\n--- 非法订阅话题测试 ---\n";
+        Subscriber badSub("坏订阅者", "   ");
+    } catch (const TopicException& e) {
+        std::cout << "[OK] 非法话题被拦截（TopicException）：" << e.what() << "\n";
     }
 
     return 0;
