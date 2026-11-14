@@ -18,7 +18,7 @@ const std::string& Publisher::getTopic() const {
     return topic_;
 }
 
-void Publisher::init() {
+void Publisher::init(){
     std::cout << "[启动] 发布者「" << getName() << "」已在话题 " << topic_ << " 上线" << std::endl;
     inited_ = true;
     // TODO(步骤4): RosCore::instance().registerPublisher(*this);
