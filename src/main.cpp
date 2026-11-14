@@ -99,8 +99,10 @@ int main() {
 
         std::cout << "\n--- 非法话题测试（FR-25）---\n";
         Publisher badTopic("pub_bad", "   ");
-    } catch (const NodeException& e) {
-        std::cout << "[OK] 非法话题被拦截：" << e.what() << "\n";
+    } catch (const TopicException& e) {
+        std::cout << "[OK] 非法话题被拦截（TopicException）：" << e.what() << "\n";
+    } catch (const RosException& e) {
+        std::cout << "[OK] 其他项目异常（RosException）：" << e.what() << "\n";
     }
 
     return 0;

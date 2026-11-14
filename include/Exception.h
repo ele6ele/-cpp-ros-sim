@@ -18,4 +18,9 @@ public:
     explicit MessageException(const std::string& message) : RosException(message) {}
 };
 
+class TopicException : public RosException {
+    public:
+        explicit TopicException(const std::string& message):RosException(message) {}
+};
+
 

@@ -10,7 +10,7 @@
 Publisher::Publisher(const std::string& name, const std::string& topic)
     : Node(name), topic_(topic) {
     if (topic.find_first_not_of(" \t\n\r") == std::string::npos) {
-        throw NodeException("话题名不能为空或全为空白");
+        throw TopicException("话题名不能为空或全为空白");
     }
 }
 
