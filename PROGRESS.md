@@ -32,7 +32,7 @@
 | **0**（已完成 ✅）`Node` 重写练习 | 不看现有实现，按自己的理解重写 `include/Node.h` + `src/Node.cpp`；写完再和原实现对比差异 | 编译通过；空名字 / 全空白名字抛 `NodeException`；重新提交为 `refactor(node): 按自己的理解重写 Node 基类` |
 | **1** `Publisher` | 继承 `Node`，加 `topic_`；构造校验非空；`init`/`shutdown` 打日志；`publish` 先只打印（暂不转发） | 能造出发布者、走完生命周期 |
 | **2** `Subscriber` | 同上 + `onMessage(const Message&)` 打印内容与时间戳 | 能造出订阅者 |
-| **3** `RosCore` | 单例（Meyers）、两张表、`registerPublisher/registerSubscriber`、`publish` 转发、`shutdownAll` | 单例地址唯一；注册后表里有节点 |
+| **3** `RosCore` | 单例（Meyers）、两本名单、`registerPublisher/registerSubscriber`、`forwardMessage` 转发、`shutdownAll` | 单例地址唯一；注册后表里有节点 |
 | **4** 接线 | `Publisher::init` 调注册、`Publisher::publish` 调转发、`Subscriber::init` 调注册 | **1 发 3 收跑通（截图）** |
 | 5 | 补齐剩余异常（`TopicException`）与 4 类非法输入 | 故意写错不崩、提示可读 |
 | 6 | `main` 演示场景 + 测试报告 + 用户手册 | 一键运行完整流程 |
