@@ -23,4 +23,9 @@ class TopicException : public RosException {
         explicit TopicException(const std::string& message):RosException(message) {}
 };
 
+class RosCoreException : public RosException {
+    public:
+        explicit RosCoreException(const std::string& message):RosException(message) {}
+};
+
 
