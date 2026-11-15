@@ -4,6 +4,7 @@
 #include "Message.h"
 #include "Node.h"
 #include "Subscriber.h"
+#include "RosCore.h"
 
 Subscriber::Subscriber(const std::string& name, const std::string& topic)
     : Node(name), topic_(topic) {
@@ -17,13 +18,13 @@ const std::string& Subscriber::getTopic() const {
 }
 
 void Subscriber::init(){
-    std::cout << "[启动] 订阅者「" << getName() << "」开始监听 " << topic_ <<std::endl;
+    RosCore::instance().registerSubscriber(*this);   // 先注册，成功后再宣布开始监听
     inited_ = true;
-    // TODO(步骤4): RosCore::instance().registerSubscriber(*this);
+    std::cout << "[启动] 订阅者「" << getName() << "」开始监听 " << topic_ <<std::endl;
 }
 
 void Subscriber::onMessage(const Message& msg){
-    std::cout << "[接收] 订阅者「" << getName() << "」收到 " << msg.getContent()
+    std::cout << "[接收] 订阅者「" << getName() << "」收到 " << msg.getContent()//内容在 Message 里是 private 的,把整个对象传进来还得getter来调内容
               << "（" << msg.getTimestamp() << "）" << std::endl;
 }
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-
 #include "Node.h"
 
 class Publisher : public Node {

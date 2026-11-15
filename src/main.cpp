@@ -1,14 +1,16 @@
 // ============================================================
-//  程序入口 —— 当前是 M1 的自检程序
+//  程序入口 —— 当前是"步骤 3/4 集成测试"
 //
-//  M1 做了什么：
-//    * Node 抽象基类：名字封装 + 只读访问 + init()/shutdown() 纯虚接口
-//    * 名字校验：空 / 全空白 -> NodeException（构造时就拦下来）
-//    * 异常体系：RosException -> NodeException
+//  覆盖内容：
+//    * RosCore 单例唯一性
+//    * 节点初始化时自动注册（Publisher::init / Subscriber::init）
+//    * 1 发多收：按话题名匹配转发
+//    * 无人订阅的话题 -> WARN
+//    * 重复注册 -> NodeException
+//    * 统一关闭 -> 所有节点各打一次关闭日志
+//    * FR-22 空/空白节点名、FR-25 空话题
 //
-//  TODO(M2): 新增 include/Message.h + src/Message.cpp（消息 + 时间戳），
-//            然后把这个自检程序换成真正的发布/订阅演示。
-//  详细步骤见 docs/03-开发路线图.md
+//  TODO(最后): 这是测试用 main，作业最终版由你自己重写成"演示场景"。
 // ============================================================
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
@@ -16,12 +18,12 @@
 
 #include <iostream>
 #include <string>
-#include <utility>
 
 #include "Exception.h"
+#include "Message.h"
 #include "Node.h"
 #include "Publisher.h"
-#include "Message.h"
+#include "RosCore.h"
 #include "Subscriber.h"
 
 namespace {
@@ -32,33 +34,13 @@ void initConsole() {
     SetConsoleCP(CP_UTF8);
 }
 
-// ------------------------------------------------------------------
-// 临时演示节点：只为证明 Node 能被子类化、能校验名字。
-// M4 会被真正的 Publisher / Subscriber 取代，届时这个类删掉。
-// （Node 有纯虚函数，所以不能直接 Node n("x") —— 这一点编译器会帮你保证）
-// ------------------------------------------------------------------
-class DemoNode : public Node {
-public:
-    explicit DemoNode(std::string name) : Node(std::move(name)) {}
-
-    void init() override {
-        inited_ = true;
-        std::cout << "[INFO] 节点「" << getName() << "」初始化完成\n";
-    }
-
-    void shutdown() override {
-        inited_ = false;
-        std::cout << "[INFO] 节点「" <<getName() << "」已关闭\n";
-    }
-};
-
-// 演示 FR-22：非法名字必须在构造阶段就被拦下，且程序不崩溃
+// FR-22：非法节点名必须在构造阶段就被拦下，且程序不崩溃
 void checkIllegalName(const std::string& badName) {
     try {
-        DemoNode node(badName);
+        Publisher bad(badName, "/sensor/temp");
         std::cout << "[FAIL] 名字「" << badName << "」居然通过了校验\n";
     } catch (const NodeException& e) {
-        std::cout << "[OK] 非法名字被拦截：" << e.what() << "\n";
+        std::cout << "[OK] 非法节点名被拦截：" << e.what() << "\n";
     }
 }
 
@@ -67,64 +49,68 @@ void checkIllegalName(const std::string& badName) {
 int main() {
     initConsole();
 
-    std::cout << "=== M1 自检：Node 基类 + 名称校验 ===\n\n";
+    std::cout << "=== 步骤 3/4 集成测试：RosCore 注册 / 转发 / 统一关闭 ===\n\n";
 
-    // 1) 正常名字：能创建，能走完 init -> shutdown 生命周期
-    DemoNode node("pub_temp");
-    node.init();
-    node.shutdown();
+    // ---------- 1. 单例唯一性 ----------
+    std::cout << "--- 1. 单例检查 ---\n";
+    std::cout << "&instance() = " << &RosCore::instance() << "\n";
+    std::cout << "&instance() = " << &RosCore::instance() << "   <- 两次必须相同\n";
 
-    // 2) 非法名字：空串、全空白
-    std::cout << "\n--- 非法名字测试（FR-22）---\n";
-    checkIllegalName("");
-    checkIllegalName("   ");
-
-    std::cout << "\nM1 完成。下一步 M2：Message 消息封装与时间戳。\n";
-
-    Message m("25.3C");
-    std::cout << m.getContent() << " | " << m.getTimestamp() << "\n";
-    std::cout << "长度=" << m.getTimestamp().size() << "\n";
-
-
-
-
-
-    // ---- 步骤 1 临时自测：Publisher（步骤 4 接线完成后删掉）----
-    std::cout << "\n--- Publisher 自测 ---\n";
     try {
-        Publisher pub("pub_temp", "/sensor/temp");
-        pub.init();
-        pub.publish("25.3C");
-        pub.publish("26.1C");
-        pub.shutdown();
+        // ---------- 2. 造节点 + 注册 ----------
+        std::cout << "\n--- 2. 初始化（init 里自动注册）---\n";
+        Publisher  pubTemp("温度发布者", "/sensor/temp");
+        Publisher  pubHum ("湿度发布者", "/sensor/hum");
+        Subscriber subDisp("显示屏",   "/sensor/temp");
+        Subscriber subLog ("日志记录", "/sensor/temp");
+        Subscriber subHum ("湿度面板", "/sensor/hum");
 
-        std::cout << "\n--- 非法话题测试（FR-25）---\n";
-        Publisher badTopic("pub_bad", "   ");
-    } catch (const TopicException& e) {
-        std::cout << "[OK] 非法话题被拦截（TopicException）：" << e.what() << "\n";
+        pubTemp.init();
+        pubHum.init();
+        subDisp.init();
+        subLog.init();
+        subHum.init();
+
+        // ---------- 3. 转发：一个话题两个听众 ----------
+        std::cout << "\n--- 3. 发布到 /sensor/temp（应 2 人收到）---\n";
+        pubTemp.publish("25.3C");
+
+        // ---------- 4. 转发：另一个话题 ----------
+        std::cout << "\n--- 4. 发布到 /sensor/hum（应 1 人收到）---\n";
+        pubHum.publish("60%");
+
+        // ---------- 5. 无人订阅 ----------
+        std::cout << "\n--- 5. 发布到无人订阅的话题（应 WARN）---\n";
+        Message orphan("没有人听我说话");
+        RosCore::instance().forwardMessage("/sensor/none", orphan);
+
+        // ---------- 6. 重复注册 ----------
+        std::cout << "\n--- 6. 重复注册（应抛 NodeException）---\n";
+        try {
+            Publisher dup("温度发布者", "/sensor/other");
+            dup.init();
+            std::cout << "[FAIL] 同名节点居然注册成功了\n";
+        } catch (const NodeException& e) {
+            std::cout << "[OK] 重复注册被拦截：" << e.what() << "\n";
+        }
+
+        // ---------- 7. 统一关闭 ----------
+        std::cout << "\n--- 7. 统一关闭 ---\n";
+        RosCore::instance().shutdownAll();
+
+        // ---------- 8. FR-22 / FR-25 非法输入 ----------
+        std::cout << "\n--- 8. 非法节点名与空话题 ---\n";
+        checkIllegalName("");
+        checkIllegalName("   ");
+        try {
+            Publisher badTopic("坏发布者", "  ");
+        } catch (const TopicException& e) {
+            std::cout << "[OK] 空话题被拦截：" << e.what() << "\n";
+        }
     } catch (const RosException& e) {
-        std::cout << "[OK] 其他项目异常（RosException）：" << e.what() << "\n";
-    }
-
-    // ---- 步骤 2 临时自测：Subscriber（步骤 4 接线完成后删掉）----
-    std::cout << "\n--- Subscriber 自测 ---\n";
-    try {
-        Subscriber sub1("显示屏订阅者", "/sensor/temp");
-        Subscriber sub2("日志记录者", "/sensor/temp");
-        sub1.init();
-        sub2.init();
-
-        Message msg("25.3C");
-        sub1.onMessage(msg);
-        sub2.onMessage(msg);
-
-        sub1.shutdown();
-        sub2.shutdown();
-
-        std::cout << "\n--- 非法订阅话题测试 ---\n";
-        Subscriber badSub("坏订阅者", "   ");
-    } catch (const TopicException& e) {
-        std::cout << "[OK] 非法话题被拦截（TopicException）：" << e.what() << "\n";
+        std::cout << "[捕获项目异常] " << e.what() << "\n";
+    } catch (const std::exception& e) {
+        std::cout << "[捕获标准异常] " << e.what() << "\n";
     }
 
     return 0;

@@ -1,10 +1,10 @@
 #include <iostream>
 #include <string>
-
 #include "Exception.h"
 #include "Message.h"
 #include "Node.h"
 #include "Publisher.h"
+#include "RosCore.h"
 
 // 传入节点名和话题名；话题名表明这是哪个频道，让 RosCore 发给正确的 Subscriber
 Publisher::Publisher(const std::string& name, const std::string& topic)
@@ -19,15 +19,15 @@ const std::string& Publisher::getTopic() const {
 }
 
 void Publisher::init(){
-    std::cout << "[启动] 发布者「" << getName() << "」已在话题 " << topic_ << " 上线" << std::endl;
+    RosCore::instance().registerPublisher(*this);   // 先注册：失败就直接抛，不会留下"已上线"的假日志
     inited_ = true;
-    // TODO(步骤4): RosCore::instance().registerPublisher(*this);
+    std::cout << "[启动] 发布者「" << getName() << "」已在话题 " << topic_ << " 上线" << std::endl;
 }
 
 void Publisher::publish(const std::string& data) {
     Message msg{data};   // 传参并调用 Message 的构造函数，创建消息对象
     std::cout << "[发布] " << getName() << " -> " << topic_ << " : " << msg.getContent() << std::endl;
-    // TODO(步骤4): RosCore::instance().forwardMessage(topic_, msg);
+    RosCore::instance().forwardMessage(topic_, msg);
 }
 
 void Publisher::shutdown() {
