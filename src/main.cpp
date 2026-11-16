@@ -20,54 +20,74 @@ void initConsole() {
     SetConsoleCP(CP_UTF8);
 }
 
-// 读一行；返回 false 表示输入结束（EOF），主循环应当退出
+// 读一行；返回 false 表示输入结束（EOF）
 bool readLine(const char* prompt, std::string& out) {
     std::cout << prompt;
     return static_cast<bool>(std::getline(std::cin, out));
 }
 
-// 空串或全空白都算"没填"
 bool isBlank(const std::string& s) {
     return s.find_first_not_of(" \t\n\r") == std::string::npos;
 }
 
-// 反复询问，直到拿到非空白内容；输入 q 取消
-bool askNonBlank(const char* prompt, const char* fieldName, std::string& out) {
-    for (;;) {
-        if (!readLine(prompt, out)) return false;
-        if (out == "q" || out == "Q") return false;
-        if (!isBlank(out)) return true;
-        std::cout << "[错误] " << fieldName << "不能为空或全为空白，请重新输入。\n";
-    }
+bool isCancel(const std::string& s) {
+    return s == "q" || s == "Q" || s == "0";   // q 或 0 都表示取消
 }
 
 // ============================================================
 //  选项 1：作为发布者发布消息
-//  输错不会退出程序，而是回到"上一步"重新输入
+//  引导式输入：节点名 -> 标题(话题) -> 内容
+//  任何一步输入空白（或节点名重复）都会报错，并【回到那一步】重新输入
 // ============================================================
 void publishFlow() {
     std::cout << "\n---------- 作为发布者发布消息 ----------\n"
                  "（任意一步输入 q 可取消，返回菜单）\n";
 
-    std::string topic, content;
+    std::string name, topic, content;
 
-    // 第一步：标题（话题名）—— 空/全空白会报错并重新询问
-    if (!askNonBlank("请输入标题（话题名）：", "标题", topic)) {
-        std::cout << "（已取消，返回菜单）\n";
-        return;
+    // 第 1 步：发布者节点名
+    for (;;) {
+        if (!readLine("请输入发布者节点名：", name)) return;
+        if (isCancel(name)) { std::cout << "（已取消，返回菜单）\n"; return; }
+        if (isBlank(name)) {
+            std::cout << "[错误] 节点名不能为空或全为空白，请重新输入。\n";
+            continue;                       // ← 回到这一步，重新问节点名
+        }
+        if (RosCore::instance().isNameRegistered(name)) {
+            std::cout << "[错误] 节点名「" << name << "」已被占用，请换一个。\n";
+            continue;                       // ← 同样回到这一步
+        }
+        break;
     }
 
-    // 第二步：内容 —— 同样校验
-    if (!askNonBlank("请输入消息内容：", "内容", content)) {
-        std::cout << "（已取消，返回菜单）\n";
-        return;
+    // 第 2 步：标题（话题名）
+    for (;;) {
+        if (!readLine("请输入标题（话题名）：", topic)) return;
+        if (isCancel(topic)) { std::cout << "（已取消，返回菜单）\n"; return; }
+        if (isBlank(topic)) {
+            std::cout << "[错误] 标题不能为空或全为空白，请重新输入。\n";
+            continue;                       // ← 回到这一步，重新问标题
+        }
+        break;
     }
 
-    // 第三步：真正发布（构造时还会再校验一次话题，双保险）
+    // 第 3 步：消息内容
+    for (;;) {
+        if (!readLine("请输入消息内容：", content)) return;
+        if (isCancel(content)) { std::cout << "（已取消，返回菜单）\n"; return; }
+        if (isBlank(content)) {
+            std::cout << "[错误] 消息内容不能为空或全为空白，请重新输入。\n";
+            continue;                       // ← 回到这一步，重新问内容
+        }
+        break;
+    }
+
+    // 三步都合法，真正发布
     try {
-        Publisher temp("交互发布者", topic);   // 未注册：避免临时节点残留在名册里
-        temp.publish(content);                 // 内部构造 Message 并转发给订阅者
-        std::cout << "（发布完成；若无人订阅该话题，上方会有一条 [WARN]）\n";
+        // 临时发布者：只用于校验与打日志，不注册（注册后局部对象销毁会留下悬空指针）
+        Publisher temp(name, topic);
+        temp.publish(content);
+        std::cout << "（发布完成；若该话题无人订阅，上方会有一条 [WARN]）\n";
     } catch (const RosException& e) {
         std::cout << "[错误] 发布失败：" << e.what() << "\n";
     }
@@ -75,31 +95,42 @@ void publishFlow() {
 
 // ============================================================
 //  选项 2：作为订阅者查看消息
+//  输入订阅者节点名 -> 显示它的收件箱
 // ============================================================
-void showInboxFlow(const std::vector<Subscriber*>& subs) {
-    std::cout << "\n---------- 作为订阅者查看消息 ----------\n";
-
+void viewFlow(const std::vector<Subscriber*>& subs) {
+    std::cout << "\n---------- 作为订阅者查看消息 ----------\n"
+                 "当前订阅者：";
     for (std::size_t i = 0; i < subs.size(); ++i) {
-        std::cout << "  " << (i + 1) << "  " << subs[i]->getName()
-                  << "（话题 " << subs[i]->getTopic()
-                  << "，已收 " << subs[i]->getInbox().size() << " 条）\n";
+        std::cout << subs[i]->getName() << "（话题 " << subs[i]->getTopic() << "）";
+        if (i + 1 < subs.size()) std::cout << "、";
     }
+    std::cout << "\n（输入 q 可取消，返回菜单）\n";
 
-    std::string line;
-    if (!readLine("请选择订阅者编号（0 返回菜单）：", line)) return;
-    if (line.empty() || line[0] == '0') return;
+    std::string name;
+    for (;;) {
+        if (!readLine("请输入订阅者节点名：", name)) return;
+        if (isCancel(name)) { std::cout << "（已取消，返回菜单）\n"; return; }
+        if (isBlank(name)) {
+            std::cout << "[错误] 节点名不能为空或全为空白，请重新输入。\n";
+            continue;                       // ← 回到这一步
+        }
 
-    const int idx = line[0] - '1';
-    if (idx < 0 || idx >= static_cast<int>(subs.size())) {
-        std::cout << "[错误] 没有这个编号。\n";
+        Subscriber* found = nullptr;
+        for (Subscriber* s : subs) {
+            if (s->getName() == name) { found = s; break; }
+        }
+        if (found == nullptr) {
+            std::cout << "[错误] 没有叫「" << name << "」的订阅者，请重新输入。\n";
+            continue;                       // ← 回到这一步
+        }
+
+        found->printInbox();
         return;
     }
-    subs[idx]->printInbox();
 }
 
 // ============================================================
 //  选项 3：完整流程演示（原五阶段，原样保留）
-//  每次进入都用一套新的局部节点，结束时统一关闭，可反复运行
 // ============================================================
 void runAutoDemo() {
     std::cout << "\n########## 完整流程演示 ##########\n";
@@ -175,27 +206,41 @@ void runAutoDemo() {
     RosCore::instance().shutdownAll();
 }
 
+void printWelcome(const std::vector<Subscriber*>& subs) {
+    std::cout << "\n============================================================\n"
+                 "        C++ 模拟 ROS 节点系统（会话式演示）\n"
+                 "------------------------------------------------------------\n"
+                 "  发布者：向指定话题发送一条消息\n"
+                 "  订阅者：接收消息并保存在收件箱，可随时查看\n"
+                 "\n  当前在线订阅者：\n";
+    for (Subscriber* s : subs) {
+        std::cout << "    · " << s->getName() << "  （监听话题 " << s->getTopic() << "）\n";
+    }
+    std::cout << "============================================================\n";
+}
+
 }  // namespace
 
 int main() {
     initConsole();   // 必须在任何输出之前调用
 
-    // 会话级的订阅者：整个程序运行期间一直存在
+    // 会话级订阅者：整个程序运行期间一直存在
     Subscriber screen  ("显示屏",   "temp1");
     Subscriber recorder("日志记录", "temp1");
     std::vector<Subscriber*> subs{ &screen, &recorder };
 
-    std::cout << "\n=== 系统启动：初始化会话订阅者 ===\n";
     screen.init();
     recorder.init();
 
+    printWelcome(subs);
+
     for (;;) {
-        std::cout << "\n============== C++ 模拟 ROS 节点系统 ==============\n"
+        std::cout << "\n---------------- 菜单 ----------------\n"
                      "  1  作为发布者发布消息\n"
                      "  2  作为订阅者查看消息\n"
                      "  3  完整流程演示（初始化→收发→异常→关闭）\n"
                      "  0  退出\n"
-                     "===================================================\n"
+                     "--------------------------------------\n"
                      "请选择：";
 
         std::string line;
@@ -208,7 +253,7 @@ int main() {
             break;
 
         case '2':
-            showInboxFlow(subs);
+            viewFlow(subs);
             break;
 
         case '3':
