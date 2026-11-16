@@ -4,7 +4,9 @@
 #include "Message.h"
 
 Message::Message(const std::string& content){
-    if(content.empty()) throw MessageException("消息内容不可为空");//空消息报错  用invalid也可
+    if (content.find_first_not_of(" \t\n\r") == std::string::npos) {
+        throw MessageException("消息内容不能为空或全为空白");
+    }
     content_ = content;//ATT:不可以变成成员函数，不然创造、调用对象会可能出现半成品，还需要考虑非空的情况
     timestamp_=now();
 }
