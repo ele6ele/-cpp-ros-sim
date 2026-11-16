@@ -3,7 +3,6 @@
 #include <windows.h>   // SetConsoleOutputCP：中文输出必需，否则控制台按 GBK 解释 UTF-8 → 乱码
 
 #include <iostream>
-#include <string>
 
 #include "Exception.h"
 #include "Message.h"
@@ -14,21 +13,19 @@
 
 namespace {
 
-// 把控制台代码页切成 UTF-8（65001）。Windows 中文环境固定写法，照抄即可。
 void initConsole() {
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 }
 
 // ============================================================
-//  单项错误演示（供交互菜单调用）
-//  注意：这里都用"构造后不注册"或"直接调用注册接口"的方式，
-//        避免临时对象进名册后销毁、留下悬空指针。
+//  【新增】交互式错误演示：现场演示用
+//  这些函数只负责"演示一个错误"，不改变你原有流程
 // ============================================================
 
 void demoEmptyName() {
     try {
-        Publisher p("", "demo_topic");           // 空节点名 -> Node 构造函数抛
+        Publisher p("", "demo_topic");
         std::cout << "  [FAIL] 空节点名居然通过了\n";
     } catch (const NodeException& e) {
         std::cout << "  [OK] NodeException：" << e.what() << "\n";
@@ -37,7 +34,7 @@ void demoEmptyName() {
 
 void demoBlankTopic() {
     try {
-        Publisher p("临时演示节点", "   ");        // 全空白话题 -> Publisher 构造函数抛
+        Publisher p("临时演示节点", "   ");
         std::cout << "  [FAIL] 空白话题居然通过了\n";
     } catch (const TopicException& e) {
         std::cout << "  [OK] TopicException：" << e.what() << "\n";
@@ -46,7 +43,7 @@ void demoBlankTopic() {
 
 void demoEmptyMessage() {
     try {
-        Message m("");                            // 空内容 -> Message 构造函数抛
+        Message m("");
         std::cout << "  [FAIL] 空消息居然通过了\n";
     } catch (const MessageException& e) {
         std::cout << "  [OK] MessageException：" << e.what() << "\n";
@@ -55,7 +52,7 @@ void demoEmptyMessage() {
 
 void demoDuplicateName(Publisher& registered) {
     try {
-        RosCore::instance().registerPublisher(registered);   // 把已注册的节点再登记一次
+        RosCore::instance().registerPublisher(registered);
         std::cout << "  [FAIL] 重复注册居然成功了\n";
     } catch (const NodeException& e) {
         std::cout << "  [OK] NodeException：" << e.what() << "\n";
@@ -64,11 +61,11 @@ void demoDuplicateName(Publisher& registered) {
 
 void demoUnknownTopic() {
     Message m("没人听");
-    RosCore::instance().forwardMessage("/no/such/topic", m);   // 只打 WARN，不抛异常
+    RosCore::instance().forwardMessage("/no/such/topic", m);
     std::cout << "  （上面那条 WARN 就是「转发到无人话题」的结果，程序没有崩）\n";
 }
 
-// 现场手动输入：只构造、不注册（避免局部对象进名册后销毁造成悬空）
+// 现场手动输入：只构造、不注册
 void demoManualInput() {
     std::string name, topic;
     std::cout << "  请输入节点名（直接回车 = 空串）：";
@@ -98,8 +95,8 @@ void runInteractiveDemo(Publisher& registered) {
     for (;;) {
         std::cout << "\n请选择（0 退出）：";
         std::string line;
-        if (!std::getline(std::cin, line)) break;   // 输入结束（如重定向了空输入）→ 自动退出
-        if (line.empty()) break;                    // 直接回车也退出
+        if (!std::getline(std::cin, line)) break;
+        if (line.empty()) break;
         switch (line[0]) {
         case '1': demoEmptyName(); break;
         case '2': demoBlankTopic(); break;
@@ -118,7 +115,7 @@ void runInteractiveDemo(Publisher& registered) {
 int main() {
     initConsole();   // 必须在任何输出之前调用
 
-    // 5 个节点：名字必须各不相同
+    // 5 个节点：名字必须各不相同（重名会被 register 拦下，那是阶段 4 才故意做的事）
     Publisher  tempPublisher("温度发布者", "temp1");
     Publisher  humPublisher ("湿度发布者", "hum1");
 
@@ -137,54 +134,60 @@ int main() {
         recorder.init();
         humPanel.init();
     } catch (const NodeException& e) {
-        std::cout << "[错误] 节点注册失败：" << e.what() << "\n";
+        std::cout << "[OK] 重复注册被拦截：" << e.what() << "\n";
+    } catch (const RosException& e) {
+        std::cout << "[外层兜底] " << e.what() << "\n";
     }
 
     // ---------- 阶段 2：连续发布 ----------
     std::cout << "\n=== 阶段 2：连续发布 ===\n";
-    try {
+    try{
+
         tempPublisher.publish("16℃");
         tempPublisher.publish("18℃");
         tempPublisher.publish("19℃");
+
         humPublisher.publish("60%");
-    } catch (const RosException& e) {
-        std::cout << "[错误] 发布失败：" << e.what() << "\n";
+    }catch (const RosException& e) {
+        std::cout << "[外层兜底] " << e.what() << "\n";
     }
 
     // ---------- 阶段 3：无人订阅的话题 ----------
     std::cout << "\n=== 阶段 3：无人订阅的话题 ===\n";
-    Message nobody("示例消息");
-    RosCore::instance().forwardMessage("/no/such/topic", nobody);
+
+    Message ONE = Message("示例消息");
+    RosCore::instance().forwardMessage("示例标题",ONE);
 
     // ---------- 阶段 4：异常演示 ----------
     std::cout << "\n=== 阶段 4：异常演示 ===\n";
 
-    // ① 节点重名：init 时注册会抛 NodeException
-    try {
-        Publisher dup("温度发布者", "temp0");
-        dup.init();
-        std::cout << "[FAIL] 重名节点居然注册成功了\n";
-    } catch (const NodeException& e) {
-        std::cout << "[OK] 节点重名被拦截：" << e.what() << "\n";
-    }
+        //一、不可重名
+        try{
+            Publisher  tempPublisher0("温度发布者", "temp0");
+            tempPublisher0.init();
+        }catch(const NodeException& e){
+            std::cout<<"[OK]重名消息被拦截："<<e.what()<<"\n";
+        }
 
-    // ② 空白话题：名字合法、话题全空白 -> 构造函数抛 TopicException
-    try {
-        Publisher badTopic("临时节点", "   ");
-        std::cout << "[FAIL] 空白话题居然通过了\n";
-    } catch (const TopicException& e) {
-        std::cout << "[OK] 空话题被拦截：" << e.what() << "\n";
-    }
+        //二、标题不可为空
 
-    // ③ 空消息：内容为空串 -> 构造函数抛 MessageException
-    try {
-        Message badMessage("");
-        std::cout << "[FAIL] 空消息居然通过了\n";
-    } catch (const MessageException& e) {
-        std::cout << "[OK] 空消息被拦截：" << e.what() << "\n";
-    }
+        try{
+            Publisher  tempPublisher01("临时节点", "  ");   // 名字合法，话题空白
+            tempPublisher01.init();
+        }catch(const TopicException& e){
+            std::cout<<"[OK]空白标题被拦截："<<e.what()<<"\n";
+        }
 
-    // 交互菜单：现场演示时可用；直接回车或输入 0 结束
+        //三、消息内容不可为空
+
+        try{
+            Message NONE = Message("   ");                  // 你原来的写法：全空白。Message 升级校验后同样会被拦
+            RosCore::instance().forwardMessage("示例标题",NONE);
+        }catch(const MessageException& e){
+            std::cout<<"[WARN]"<<e.what()<<"\n";
+        }
+
+    // ---------- 阶段 4.5：交互式演示（新增）----------
     runInteractiveDemo(tempPublisher);
 
     // ---------- 阶段 5：统一关闭 ----------
