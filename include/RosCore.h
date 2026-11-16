@@ -27,6 +27,9 @@ public:
     void registerPublisher(Publisher& pub);
     void registerSubscriber(Subscriber& sub);
 
+    // 查询某个节点名是否已被占用（交互式输入时用来提前校验节点名）
+    bool isNameRegistered(const std::string& name) const;
+
     void forwardMessage(const std::string& topic, const Message& msg);
 
     void shutdownAll();
