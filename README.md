@@ -10,6 +10,7 @@
 | 异常体系（`RosException` / `NodeException` / `TopicException` / `MessageException`） | `include/Exception.h` | ✅ |
 | `Node` 抽象基类（名字封装、`init`/`shutdown` 纯虚、虚析构） | `include/Node.h`、`src/Node.cpp` | ✅ |
 | `Message`（内容 + `YYYY-MM-DD HH:MM:SS` 时间戳、只读 getter、空内容校验） | `include/Message.h`、`src/Message.cpp` | ✅ |
+| `TemperatureMessage`（自定义消息：温度 + 湿度，B-01） | `include/TemperatureMessage.h`、`src/TemperatureMessage.cpp` | ✅ |
 | `Publisher`（话题属性、注册、发布） | `include/Publisher.h`、`src/Publisher.cpp` | ✅ |
 | `Subscriber`（话题属性、注册、接收） | `include/Subscriber.h`、`src/Subscriber.cpp` | ✅ |
 | `RosCore`（单例、两本名册、判重、按话题转发、统一关闭） | `include/RosCore.h`、`src/RosCore.cpp` | ✅ |
@@ -33,6 +34,7 @@
 ```powershell
 .\build.bat      # 编译，产物在 build\ros_sim.exe
 .\run.bat        # 编译并运行
+.\preview.bat    # 运行 + 生成 logs\report.html 并打开浏览器（可视化报告）
 .\clean.bat      # 清理产物
 ```
 
@@ -82,6 +84,8 @@ cpp-ros-sim/
 │   ├── 04-用户手册.md      # ★ 怎么编译、怎么运行、输出怎么读
 │   ├── 05-测试报告.md      # ★ T-01~T-11 用例结果与已知问题
 │   └── 06-每个模块怎么写.md # 开发思路笔记（思考清单）
+├── tools/                 # make_report.ps1：把 run.log 渲染成 report.html
+├── preview.bat            # 一键：运行 + 生成报告 + 打开浏览器
 ├── tests/                 # 预留测试目录
 └── PROGRESS.md            # 进度、设计决策、协作约定
 ```
@@ -114,7 +118,7 @@ git commit -m "feat(node): 实现 Node 基类与名称校验"
 
 | 编号 | 加分项 | 状态 | 说明 |
 | --- | --- | --- | --- |
-| B-01 | 自定义消息类型（温度/湿度/时间戳） | ❌ 未做 | `Message` 已预留虚析构，可扩展派生类 |
+| B-01 | 自定义消息类型（温度/湿度/时间戳） | ✅ 已做 | `Message` 加虚析构与 `type()`；派生 `TemperatureMessage`，订阅者按类型分支处理 |
 | B-02 | 服务/客户端同步通信 | ❌ 未做 | — |
 | B-03 | 运行期动态增删节点 | ❌ 未做 | 需要注销接口（`RosCore` 目前只有注册） |
 | B-04 | 消息收发日志持久化到文件 | ✅ 已做 | `Logger` 写入 `logs/run.log`（追加、自动建目录、每条 flush） |
