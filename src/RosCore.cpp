@@ -44,16 +44,6 @@ void RosCore::registerSubscriber(Subscriber& sub) {
     nodes_.push_back(&sub);
 }
 
-bool RosCore::isNameRegistered(const std::string& name) const {
-    for (Publisher* p : publishers_) {
-        if (p->getName() == name) return true;
-    }
-    for (Subscriber* s : subscribers_) {
-        if (s->getName() == name) return true;
-    }
-    return false;
-}
-
 void RosCore::forwardMessage(const std::string& topic, const Message& msg) {
     int count = 0;
 
