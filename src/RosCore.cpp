@@ -1,5 +1,6 @@
 #include <iostream>
 #include "Exception.h"
+#include "Logger.h"
 #include "Message.h"
 #include "Node.h"
 #include "Publisher.h"
@@ -46,18 +47,40 @@ void RosCore::registerSubscriber(Subscriber& sub) {
 
 void RosCore::forwardMessage(const std::string& topic, const Message& msg) {
     int count = 0;
+    bool judge = false;
 
-    for(Subscriber* sub1 : subscribers_){
-        if (topic == sub1->getTopic()){
-            sub1->onMessage(msg);
-            ++count;
+
+    //判断话题存在性
+    for(Publisher* pub1 : publishers_){
+        if(pub1->getTopic() == topic){
+            judge = true;
         }
     }
-    if(count == 0){
-        std::cout << "[WARN] 话题「" << topic << "」当前没有订阅者" << std::endl;
+    for(Subscriber* sub1 : subscribers_){
+        if(sub1->getTopic() == topic){
+            judge = true;
+        }
+    }
+    if (judge == false){
+        throw TopicException("该话题:"+topic+"不存在");
     }
 
-}
+    //判断订阅者存在性
+    for(Subscriber* sub2 : subscribers_){
+            if (topic == sub2->getTopic()){
+                sub2->onMessage(msg);
+                ++count;
+            }
+        }
+        if(count == 0){
+            Logger::instance().log(LogLevel::Warn, "RosCore",
+                                   "话题「" + topic + "」当前没有订阅者");
+        }
+    }
+
+
+
+
 
 void RosCore::shutdownAll() {
     for (Node* node : nodes_) {
@@ -66,5 +89,5 @@ void RosCore::shutdownAll() {
     publishers_.clear();
     subscribers_.clear();
     nodes_.clear();             //清空所有名单
-    std::cout << "[系统] 所有节点已关闭" << std::endl;
+    Logger::instance().log(LogLevel::Info, "RosCore", "所有节点已关闭");
 }

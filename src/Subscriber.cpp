@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include "Exception.h"
+#include "Logger.h"
 #include "Message.h"
 #include "Node.h"
 #include "Subscriber.h"
@@ -20,15 +21,18 @@ const std::string& Subscriber::getTopic() const {
 void Subscriber::init(){
     RosCore::instance().registerSubscriber(*this);   // 先注册，成功后再宣布开始监听
     inited_ = true;
-    std::cout << "[启动] 订阅者「" << getName() << "」开始监听 " << topic_ <<std::endl;
+    Logger::instance().log(LogLevel::Info, "Subscriber",
+                           "节点「" + getName() + "」开始监听话题 " + topic_);
 }
 
 void Subscriber::onMessage(const Message& msg){
-    std::cout << "[接收] 订阅者「" << getName() << "」收到 " << msg.getContent()//内容在 Message 里是 private 的,把整个对象传进来还得getter来调内容
-              << "（" << msg.getTimestamp() << "）" << std::endl;
+    //内容在 Message 里是 private 的,把整个对象传进来还得getter来调内容
+    Logger::instance().log(LogLevel::Info, "Subscriber",
+                           "节点「" + getName() + "」收到 " + msg.getContent()
+                           + "（" + msg.getTimestamp() + "）");
 }
 
 void Subscriber::shutdown() {
-    std::cout << "[关闭] 订阅者「" << getName() << "」停止监听" << std::endl;
+    Logger::instance().log(LogLevel::Info, "Subscriber", "节点「" + getName() + "」停止监听");
     inited_ = false;
 }

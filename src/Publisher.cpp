@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include "Exception.h"
+#include "Logger.h"
 #include "Message.h"
 #include "Node.h"
 #include "Publisher.h"
@@ -21,16 +22,18 @@ const std::string& Publisher::getTopic() const {
 void Publisher::init(){
     RosCore::instance().registerPublisher(*this);   // 先注册：失败就直接抛，不会留下"已上线"的假日志
     inited_ = true;
-    std::cout << "[启动] 发布者「" << getName() << "」已在话题 " << topic_ << " 上线" << std::endl;
+    Logger::instance().log(LogLevel::Info, "Publisher",
+                           "节点「" + getName() + "」已在话题 " + topic_ + " 上线");
 }
 
 void Publisher::publish(const std::string& data) {
     Message msg{data};   // 传参并调用 Message 的构造函数，创建消息对象
-    std::cout << "[发布] " << getName() << " -> " << topic_ << " : " << msg.getContent() << std::endl;
-    RosCore::instance().forwardMessage(topic_, msg);
+    Logger::instance().log(LogLevel::Info, "Publisher",
+                           getName() + " -> " + topic_ + " : " + msg.getContent());
+    RosCore::instance().forwardMessage(topic_, msg);   //这里就调用了转发函数
 }
 
 void Publisher::shutdown() {
-    std::cout << "[关闭] 发布者「" << getName() << "」下线" << std::endl;
+    Logger::instance().log(LogLevel::Info, "Publisher", "节点「" + getName() + "」下线");
     inited_ = false;
 }
