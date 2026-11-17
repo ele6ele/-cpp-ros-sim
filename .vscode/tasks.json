@@ -20,6 +20,15 @@
             "presentation": { "reveal": "always", "clear": true, "panel": "dedicated" }
         },
         {
+            "label": "preview",
+            "type": "shell",
+            "command": "${workspaceFolder}\\preview.bat",
+            "options": { "cwd": "${workspaceFolder}" },
+            "dependsOn": ["build"],
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "clear": true, "panel": "dedicated" }
+        },
+        {
             "label": "clean",
             "type": "shell",
             "command": "${workspaceFolder}\\clean.bat",
