@@ -12,6 +12,9 @@ class Message{
     public:
         explicit Message(const std::string& content);
 
+        virtual ~Message() = default;            // 允许被继承（B-01 自定义消息）
+        virtual std::string type() const;        // 消息类型标识，基类返回 "text"
+
         const std::string& getContent() const;
         const std::string& getTimestamp() const;
 

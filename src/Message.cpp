@@ -32,3 +32,7 @@ const std::string& Message::getTimestamp() const{
 
 
 
+
+std::string Message::type() const {
+    return "text";   // 基类默认类型；TemperatureMessage 会覆盖成 "temperature"
+}

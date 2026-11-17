@@ -12,6 +12,7 @@
 #include "Publisher.h"
 #include "RosCore.h"
 #include "Subscriber.h"
+#include "TemperatureMessage.h"
 
 namespace {
 
@@ -66,6 +67,10 @@ int main() {
             tempPublisher.publish("19℃");
 
             humPublisher.publish("60%");
+
+            // 加分项 B-01：发一条"自定义类型"的消息（带温度、湿度），订阅者按类型处理
+            TemperatureMessage reading(26.5, 61.0);
+            RosCore::instance().forwardMessage("temp1", reading);
         } catch (const RosException& e) {
             Logger::instance().log(LogLevel::Error, "Main", std::string("发布失败：") + e.what());
         }
